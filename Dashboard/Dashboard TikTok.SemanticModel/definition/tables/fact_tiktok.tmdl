@@ -1,0 +1,168 @@
+table fact_tiktok
+	lineageTag: 13ee77ce-a407-49fb-9467-91110123510c
+
+	column video_id
+		dataType: string
+		lineageTag: b878f76c-7afc-4762-9ee1-507ef4cca2c8
+		summarizeBy: none
+		sourceColumn: video_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column claim_status
+		dataType: string
+		lineageTag: df2f0244-c85d-4467-b9ee-e6ef5032adbb
+		summarizeBy: none
+		sourceColumn: claim_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_duration_sec
+		dataType: int64
+		formatString: 0
+		lineageTag: e9eef78d-548e-4f40-b450-99d1d85238da
+		summarizeBy: sum
+		sourceColumn: video_duration_sec
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation __PBI_SemanticLinks = [{"LinkTarget":{"TableName":"fact_tiktok","TableItemName":"video_duration_sec (bins)","ObjectType":4},"LinkType":"UsedInGroup"}]
+
+	column video_transcription_text
+		dataType: string
+		lineageTag: 9ca0d126-2a3a-410b-b15f-d3893bf29982
+		summarizeBy: none
+		sourceColumn: video_transcription_text
+
+		annotation SummarizationSetBy = Automatic
+
+	column verified_status
+		dataType: string
+		lineageTag: 837db990-90a5-4956-8eca-49b7a239e198
+		summarizeBy: none
+		sourceColumn: verified_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column author_ban_status
+		dataType: string
+		lineageTag: 8069f2a4-1f6d-427d-baf6-27d801756721
+		summarizeBy: none
+		sourceColumn: author_ban_status
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_view_count
+		dataType: int64
+		formatString: 0
+		lineageTag: 659daf5c-e3dc-4d22-ba90-770b8bb6bbb3
+		summarizeBy: sum
+		sourceColumn: video_view_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_like_count
+		dataType: int64
+		formatString: 0
+		lineageTag: fc51a456-3c2f-4999-814b-58077527a43a
+		summarizeBy: sum
+		sourceColumn: video_like_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_share_count
+		dataType: int64
+		formatString: 0
+		lineageTag: 129f15f9-acb3-4fae-9f1c-ce23a1e2c650
+		summarizeBy: sum
+		sourceColumn: video_share_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_download_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b0da8743-9092-4ea3-a8c4-27f61b6d9235
+		summarizeBy: sum
+		sourceColumn: video_download_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column video_comment_count
+		dataType: int64
+		formatString: 0
+		lineageTag: 898172ea-b4ad-41be-825f-0b9b0de25675
+		summarizeBy: sum
+		sourceColumn: video_comment_count
+
+		annotation SummarizationSetBy = Automatic
+
+	column sec_duration_group = fact_tiktok[video_duration_sec] & " Duration"
+		lineageTag: cca4b879-cf3e-46d9-a2a4-6382000c1cc7
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'video_duration_sec (bins)' =
+			VAR __Count = 5
+			
+			VAR __Min = MIN('fact_tiktok'[video_duration_sec])
+			
+			VAR __Max = MAX('fact_tiktok'[video_duration_sec])
+			
+			VAR __Difference = (__Max - __Min)
+			
+			VAR __Size = IF(__Difference > 0, __Difference / __Count, 1)
+			
+			VAR __BinNumber = INT(('fact_tiktok'[video_duration_sec] - __Min) / __Size)
+			
+			RETURN
+				IF(
+					ISBLANK('fact_tiktok'[video_duration_sec]),
+					BLANK(),
+					__Min + (MIN(__BinNumber, __Count - 1) * __Size)
+				)
+		lineageTag: 2ea4b76e-69dc-44c9-950a-2d676b1afb3b
+		summarizeBy: none
+
+		extendedProperty GroupingMetadata =
+				{
+				  "version": 0,
+				  "groupedColumns": [
+				    {
+				      "Column": {
+				        "Expression": {
+				          "SourceRef": {
+				            "Entity": "fact_tiktok"
+				          }
+				        },
+				        "Property": "video_duration_sec"
+				      }
+				    }
+				  ]
+				}
+
+		annotation GroupingDesignState = {"Version":0,"Sources":[{"Name":"f","Entity":"fact_tiktok"}],"GroupedColumns":[{"Column":{"Expression":{"SourceRef":{"Source":"f"}},"Property":"video_duration_sec"}}],"BinItem":{"Expression":{"Member":{"Expression":{"Discretize":{"Expression":{"Column":{"Expression":{"SourceRef":{"Source":"f"}},"Property":"video_duration_sec"}},"Count":5}},"Member":"Min"}}}}
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_tiktok = m
+		mode: import
+		source =
+				let
+				    Source = tiktok_dataset_root,
+				    #"Changed Video_ID To Text" = Table.TransformColumnTypes(Source,{{"video_id", type text}}),
+				    #"Removed Index Column" = Table.RemoveColumns(#"Changed Video_ID To Text",{"#"}),
+				    #"Reordered Columns" = Table.ReorderColumns(#"Removed Index Column",{"video_id", "claim_status", "video_duration_sec", "video_transcription_text", "verified_status", "author_ban_status", "video_view_count", "video_like_count", "video_share_count", "video_download_count", "video_comment_count"}),
+				    #"Remove Blank in Claim_Status" = Table.SelectRows(#"Reordered Columns", each ([claim_status] <> "")),
+				    #"Removed Duplicates" = Table.Distinct(#"Remove Blank in Claim_Status"),
+				    #"Capitalized Each Word" = Table.TransformColumns(#"Removed Duplicates",{{"verified_status", Text.Proper, type text}, {"author_ban_status", Text.Proper, type text}, {"claim_status", Text.Proper, type text}})
+				in
+				    #"Capitalized Each Word"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

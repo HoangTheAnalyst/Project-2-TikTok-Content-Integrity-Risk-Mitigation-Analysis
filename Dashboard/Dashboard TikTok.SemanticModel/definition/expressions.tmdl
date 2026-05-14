@@ -1,0 +1,13 @@
+expression tiktok_dataset_root =
+		let
+		    Source = Csv.Document(File.Contents("E:\DA\DA\PBI3 - Sentiment Analysis\Dataset\tiktok_dataset.csv"),[Delimiter=",", Columns=12, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"#", Int64.Type}, {"claim_status", type text}, {"video_id", Int64.Type}, {"video_duration_sec", Int64.Type}, {"video_transcription_text", type text}, {"verified_status", type text}, {"author_ban_status", type text}, {"video_view_count", Int64.Type}, {"video_like_count", Int64.Type}, {"video_share_count", Int64.Type}, {"video_download_count", Int64.Type}, {"video_comment_count", Int64.Type}})
+		in
+		    #"Changed Type"
+	lineageTag: 895987bb-bad7-4556-91fb-fabe8567cd0d
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

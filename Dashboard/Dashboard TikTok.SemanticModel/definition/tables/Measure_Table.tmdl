@@ -1,0 +1,131 @@
+table Measure_Table
+	lineageTag: 8d0a3726-bbff-49cd-b92b-c5425fbb49c6
+
+	measure 'Total Video' = COUNT(fact_tiktok[video_id])
+		formatString: 0
+		lineageTag: 1d75059a-193e-4ee6-8cf1-b679b3f923b5
+
+	measure 'Video Banned' =
+			CALCULATE(
+			    COUNT(fact_tiktok[video_id]),
+			    ALL(fact_tiktok[author_ban_status]),
+			    fact_tiktok[author_ban_status] = "banned"
+			)
+		formatString: 0
+		lineageTag: dda792c0-24d2-4f12-a834-48897d34abc0
+
+	measure 'Banned Rate' = DIVIDE([Video Banned],[Total Video(All Author Ban Status)],0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b33ab988-88c9-403f-a887-a3b5b972f7ea
+
+	measure 'Under Review Video' =
+			CALCULATE(
+			    [Total Video],
+			    ALL(fact_tiktok[author_ban_status]),
+			    fact_tiktok[author_ban_status] = "under review"
+			)
+		formatString: 0
+		lineageTag: 5e060d7b-b582-4d86-b368-82302d5a0c3a
+
+	measure 'Flagged Video %' = DIVIDE([Video Banned] + [Under Review Video],[Total Video(All Author Ban Status)],0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: d233002d-178a-42d7-b03c-418658264c1b
+
+	measure 'Verified Account' =
+			CALCULATE(
+			    [Total Video],
+			    ALL(fact_tiktok[verified_status]),
+			    fact_tiktok[verified_status] = "verified"
+			)
+		formatString: 0
+		lineageTag: ee96b489-ae28-4611-b2e6-1e71409243ca
+
+	measure 'Verified Rate' =
+			
+			VAR Total_Account = CALCULATE(
+			    [Total Video],
+			    ALL(fact_tiktok[verified_status])
+			)
+			
+			RETURN DIVIDE([Verified Account],[Total Video],0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 8acffa3f-dfa7-4265-ad16-8d7c2988df9b
+
+	measure 'Average Views Per Video' = AVERAGE(fact_tiktok[video_view_count])
+		lineageTag: 8f81bcb1-148f-4495-a129-ce5a91d2bb2d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Video(All Author Ban Status)' =
+			CALCULATE(
+			    [Total Video],
+			    ALL(fact_tiktok[author_ban_status])
+			)
+		formatString: 0
+		lineageTag: 31cc76fe-354d-4897-adea-dce2def5638c
+
+	measure 'Flagged Video' = ```
+			[Under Review Video] + [Video Banned] 
+			```
+		formatString: 0
+		lineageTag: 50f9898e-3fea-4543-91ee-6c914b2381e7
+
+	measure 'Avg. View Banned Video' = ```
+			CALCULATE(
+			    AVERAGE(fact_tiktok[video_view_count]),
+			    ALL(fact_tiktok[author_ban_status]),
+			    fact_tiktok[author_ban_status] = "banned"
+			)
+			
+			```
+		lineageTag: 345b2017-3c36-48b3-b1c8-26b829453c20
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Review Efficiency' = DIVIDE([Video Banned],[Video Banned]+[Under Review Video],0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: 7267d912-4061-44a3-8d27-76f3d6b396fa
+
+	measure 'Claim vs Opinion Risk' =
+			
+			VAR Claim_Video = CALCULATE(
+			    COUNT(fact_tiktok[video_id]),
+			    ALL(fact_tiktok[claim_status]),
+			    ALL(fact_tiktok[author_ban_status]),
+			    fact_tiktok[claim_status] = "claim",
+			    fact_tiktok[author_ban_status] = "banned"
+			)
+			
+			VAR Opinion_Video = CALCULATE(
+			    COUNT(fact_tiktok[video_id]),
+			    ALL(fact_tiktok[claim_status]),
+			    ALL(fact_tiktok[author_ban_status]),
+			    fact_tiktok[claim_status] = "opinion",
+			    fact_tiktok[author_ban_status] = "banned"
+			)
+			
+			RETURN DIVIDE(Claim_Video,Opinion_Video,0)
+		lineageTag: 22977ca4-edf2-48aa-ac31-fa38e2b42654
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Measure
+		lineageTag: 1b62793c-352f-4a35-ae2c-e8a7a2321b6f
+
+	column Column
+		formatString: 0
+		lineageTag: 5a1d9ec3-97b5-426c-9acd-6ce4ef7898c8
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Column]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Measure_Table = calculated
+		mode: import
+		source = Row("Column", BLANK())
+
+	annotation PBI_Id = b0dc7e566e53439ea6caea69466c91ea
+
+	annotation 436ba87b-9c83-4389-a31b-ebd06a36be98 = {"Expression":""}
+
